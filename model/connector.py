@@ -8,7 +8,7 @@ def get_connector(name, audio_enc_dim, llm_dim, k, dim):
     elif name == 'linear':
         return LinearConnector(audio_enc_dim, llm_dim, k)
     elif name == 'mlp':
-        return LinearConnector(audio_enc_dim, llm_dim, k, dim)
+        return MLPConnector(audio_enc_dim, llm_dim, k, dim)
     elif name == 'cnn':
         return CNNConnector(audio_enc_dim, llm_dim, k)
     else:
