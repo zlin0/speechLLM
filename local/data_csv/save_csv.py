@@ -1,6 +1,6 @@
 import pandas as pd
 
-def save_csv(df, dataset, set, target="/home/tthebau1/EDART/SpeechLLM/data/"):
+def save_csv(df, dataset, set, target="/export/fs05/lzhan268/workspace/03llm/speechLLM/data/"):
     columns = ['transcript','gender','emotion','age','accent']
     df['dataset'] = dataset
     df['set'] = set

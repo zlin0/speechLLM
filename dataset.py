@@ -1,5 +1,3 @@
-import torch
-from transformers import AutoProcessor, AutoFeatureExtractor
 
 import torch
 from torch.utils.data import Dataset, Sampler
@@ -7,6 +5,11 @@ import torchaudio
 import pandas as pd
 import random
 import numpy as np
+
+from transformers import AutoProcessor, AutoFeatureExtractor
+
+import os
+
 
 class MyCollator:
     def __init__(self, audio_encoder_name, tokenizer):
@@ -35,6 +38,42 @@ class MyCollator:
     #     return mel
 
 
+def safe_load_audio(audio_path, target_sr=16000, mono=True):
+    """
+    Returns:
+        waveform: Tensor [channels, time]
+        sample_rate: int
+    """
+    if not isinstance(audio_path, str) or not os.path.exists(audio_path):
+        print(f"[load_audio_auto] Invalid path: {audio_path}")
+        return None, None
+
+    ext = os.path.splitext(audio_path)[1].lower() # For cases MP3, etc.
+
+    try:
+        if ext == '.mp3':
+            import librosa
+            y, sr = librosa.load(audio_path, sr=None)
+            waveform = torch.tensor(y).unsqueeze(0)
+        else:
+            waveform, sr = torchaudio.load(audio_path)
+
+        # Optional resample
+        if target_sr is not None and sr != target_sr:
+            resampler = torchaudio.transforms.Resample(orig_freq=sr, new_freq=target_sr)
+            waveform = resampler(waveform)
+            sr = target_sr
+
+        if waveform.shape[0]>1:
+            waveform = torch.mean(waveform, dim=0, keepdim=True)
+
+        return waveform, sr
+
+    except Exception as e:
+        print(f"[load_audio] Failed to load {audio_path}: {e}")
+        return None, None
+
+
 class AudioDataset(Dataset):
     def __init__(self, csv_file, mode='train', random_keys_prob=0.001, max_len = 60):
         self.data_frame = pd.read_csv(csv_file)
@@ -56,14 +95,16 @@ class AudioDataset(Dataset):
         # Load audio
         audio_row = self.data_frame.iloc[idx]
         audio_path = audio_row['audio_path']
-        if pd.isna(audio_path):
-            waveform = None
-        elif '.mp3' in audio_path:
-            waveform, sample_rate = torchaudio.load(audio_path, format='mp3')
-        else:
-            waveform, sample_rate = torchaudio.load(audio_path)
-
-        if waveform.shape[0]==2:waveform=torch.mean(waveform, axis=0).unsqueeze(0)
+        waveform, sample_rate = safe_load_audio(audio_path)
+        #if pd.isna(audio_path):
+        #    waveform = None
+        #elif '.mp3' in audio_path:
+        #    torchaudio.set_audio_backend("soundfile")
+        #    waveform, sample_rate = torchaudio.load(audio_path, format='mp3')
+        #else:
+        #    waveform, sample_rate = torchaudio.load(audio_path)
+        #
+        #if waveform.shape[0]==2:waveform=torch.mean(waveform, axis=0).unsqueeze(0)
         if waveform.shape[1]>self.max_len: waveform=waveform[:, :self.max_len]
         # Prepare labels dictionary based on mode and probability
         labels_str = {}
