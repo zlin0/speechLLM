@@ -82,10 +82,10 @@ class AudioDataset(Dataset):
                 if label in audio_row and pd.notnull(audio_row[label]):
                     formatted_label = label.capitalize()
                     if audio_row[label] == True or audio_row[label] == False:
-                        labels_str[formatted_label] = audio_row[label]
+                        labels_str[formatted_label] = audio_row[label] # If the label is true/false, keep the original
                     else:
-                        labels_str[formatted_label] = str(audio_row[label]).lower()
-
+                        labels_str[formatted_label] = str(audio_row[label]).lower() 
+                        # For other cases, we will use lower characters.
         
         if 'context' in audio_row.index:
             conv_history = audio_row['context']
@@ -188,6 +188,12 @@ class InstructionalAudioDataset(AudioDataset):
         output_prompt = output_prompt.rstrip(',\n') + "}"
 
         complete_prompt = pre_speech_prompt + post_speech_prompt + output_prompt
+        # pre_speech_prompt
+        #'Instruction:\nExamine the audio file for specific information - [Transcript, Gender]\n\nInput:\n<speech>'
+        # post_speech_prompt
+        #'</speech>\n\nOutput:\n'
+        # output_prompt
+        #'{  "Transcript": "one could see that he was very much wrapped up in his offspring",   "Gender": "f",  }'
         return waveform, pre_speech_prompt, post_speech_prompt, output_prompt, complete_prompt
 
 

@@ -9,6 +9,7 @@ from pytorch_lightning.strategies import DDPStrategy
 import torch.utils.data as data_utils
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 import wandb
+import time
 import argparse
 
 if __name__ == "__main__":
@@ -23,20 +24,23 @@ if __name__ == "__main__":
     parser.add_argument("--no-lora", action='store_true')
 
     args = parser.parse_args()
+    print("get args")
     model_name = f"{args.encoder.split('/')[-1]}-{args.connector}-{args.llm.split('-')[0]}"
     if args.no_lora: model_name = model_name+'_nolora'
     lr = float(args.lr)
     if lr == 1.0: lr = 1e-4 if 'linear' not in args.connector else 1e-5
     model_name =  f"{model_name}_lr{lr}"
-    log_path = 'logs/'+model_name
+    log_path = f"logs/{model_name}_{time.strftime('%Y%m%d_%H%M%S')}"
     use_lora = not args.no_lora
     wandb.init(project="speechllm", name=log_path)
     logger = WandbLogger(project="speechllm", name=log_path)
 
+    print("defined logger.")
     if "wavlm" in args.encoder: audio_encoder_name=args.encoder
     else: exit(f"Uknown encoder reference: {args.encoder}")
 
     
+    print("start to config model.")
     if args.llm=='TinyLlama-1.1B-Chat-v1.0':llm_name="TinyLlama/TinyLlama-1.1B-Chat-v1.0"
     batch_size = int(args.batch_size)
     
@@ -55,13 +59,15 @@ if __name__ == "__main__":
                 'max_lr': lr,
                 'total_training_step': 10000000,
                 'warmup_steps': 100,
-                'train_batch_per_epoch': 160000//batch_size,
+                'train_batch_per_epoch': 1,
+                'val_batch_per_epoch': 1,
                 'grad_accumulate_steps': 8
         }   
     
+    print("start to define model.")
     model = SpeechLLMLightning(**model_config)
     tokenizer = model.llm_tokenizer
-
+    print("Start defining dataset")
     train_dataset = InstructionalAudioDataset(
         csv_file = './data/train.csv',
         mode='train', 
@@ -82,7 +88,7 @@ if __name__ == "__main__":
 
     checkpoint_callback = ModelCheckpoint(
                     dirpath=f"checkpoints/{model_name}", 
-                    filename=model_name+'epoch-{epoch}', 
+                    filename=model_name+'/epoch-{epoch}', 
                     save_top_k=1, 
                     monitor="val/loss", 
                     save_last=True,
@@ -94,6 +100,7 @@ if __name__ == "__main__":
             devices=1, accelerator="gpu", 
             strategy=DDPStrategy(find_unused_parameters=False),
             limit_train_batches=model_config['train_batch_per_epoch'], 
+            limit_val_batches=model_config['val_batch_per_epoch'], 
             log_every_n_steps=100, 
             enable_checkpointing=True, 
             callbacks=[checkpoint_callback],

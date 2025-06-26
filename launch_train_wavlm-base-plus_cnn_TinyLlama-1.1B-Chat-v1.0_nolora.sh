@@ -12,6 +12,7 @@
 
 export HF_HOME=./hf_cache/
 export HF_DATASETS_CACHE=./hf_cache/
+export TRANSFORMERS_CACHE=$HF_HOME/transformers
 
 echo `date`
 
