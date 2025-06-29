@@ -11,6 +11,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 import wandb
 import time
 import argparse
+import os
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -19,9 +20,12 @@ if __name__ == "__main__":
     parser.add_argument('--llm')  
     parser.add_argument('--connector-k', default=2)
     parser.add_argument('--connector-dim', default=512)
+    parser.add_argument('--connector-layers', default=1)
     parser.add_argument('--batch-size', default=16)
+    parser.add_argument('--truncate-sec', default=60)
     parser.add_argument('--lr', default=1.0)
     parser.add_argument("--no-lora", action='store_true')
+
 
     args = parser.parse_args()
     print("get args")
@@ -53,15 +57,18 @@ if __name__ == "__main__":
                 'finetune_encoder': False,
                 'connector_k': int(args.connector_k),
                 'connector_dim': int(args.connector_dim),
+                'connector_layers': int(args.connector_layers),
                 'use_lora': use_lora,
                 'lora_r': 8,
                 'lora_alpha': 16,
                 'max_lr': lr,
-                'total_training_step': 10000000,
+                'batch_size':batch_size,
+                'total_training_epoch': 1000,
                 'warmup_steps': 100,
                 'train_batch_per_epoch': 1.0,
                 'val_batch_per_epoch': 1.0,
                 'grad_accumulate_steps': 8
+                'max_number_seconds':int(args.truncate_sec)
         }   
                 #'train_batch_per_epoch': 160000//batch_size,
     
@@ -73,11 +80,13 @@ if __name__ == "__main__":
         csv_file = './data/train.csv',
         mode='train', 
         random_keys_prob=0.2,
+        max_len=model_config['max_number_seconds']
         )
 
     val_dataset = InstructionalAudioDataset(
         csv_file='./data/dev.csv', 
-        mode='test'
+        mode='test',
+        max_len=model_config['max_number_seconds']
         )
 
     print(f"Train set:{len(train_dataset)}, val set:{len(val_dataset)}, batch size:{batch_size}")
@@ -97,11 +106,18 @@ if __name__ == "__main__":
     early_stop_callback = EarlyStopping(monitor="val/loss", min_delta=0.00, patience=10, verbose=False, mode="min")
 
     trainer = Trainer(
+<<<<<<< HEAD
             max_epochs=500,
             devices=1, accelerator="gpu", 
             strategy=DDPStrategy(find_unused_parameters=False),
             limit_train_batches=model_config['train_batch_per_epoch'], 
             limit_val_batches=model_config['val_batch_per_epoch'], 
+=======
+            max_epochs=model_config['total_training_epoch'], 
+            devices=1, accelerator="gpu", 
+            strategy=DDPStrategy(find_unused_parameters=False),
+            # limit_train_batches=model_config['train_batch_per_epoch'], 
+>>>>>>> upstream/main
             log_every_n_steps=100, 
             enable_checkpointing=True, 
             callbacks=[checkpoint_callback],
