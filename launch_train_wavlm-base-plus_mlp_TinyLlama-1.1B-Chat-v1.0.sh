@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=16000
-#SBATCH --job-name=mlp_train_sllm #job name
+#SBATCH --job-name=256mlp_train_sllm #job name
 #SBATCH --nodes=1  #number of nodes requested
 #SBATCH --gpus=1  #number of gpus requested
 #SBATCH --partition=gpu-a100   #queue
@@ -25,4 +25,5 @@ python3 train.py \
     --encoder 'microsoft/wavlm-base-plus' \
     --connector 'mlp' \
     --llm 'TinyLlama-1.1B-Chat-v1.0' \
-    --connector-k '1' 
+    --connector-k '1'  \
+    --batch-size 256

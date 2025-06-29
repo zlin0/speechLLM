@@ -59,10 +59,11 @@ if __name__ == "__main__":
                 'max_lr': lr,
                 'total_training_step': 10000000,
                 'warmup_steps': 100,
-                'train_batch_per_epoch': 1,
-                'val_batch_per_epoch': 1,
+                'train_batch_per_epoch': 1.0,
+                'val_batch_per_epoch': 1.0,
                 'grad_accumulate_steps': 8
         }   
+                #'train_batch_per_epoch': 160000//batch_size,
     
     print("start to define model.")
     model = SpeechLLMLightning(**model_config)
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     early_stop_callback = EarlyStopping(monitor="val/loss", min_delta=0.00, patience=10, verbose=False, mode="min")
 
     trainer = Trainer(
-            max_epochs=model_config['total_training_step']//model_config['train_batch_per_epoch'], 
+            max_epochs=500,
             devices=1, accelerator="gpu", 
             strategy=DDPStrategy(find_unused_parameters=False),
             limit_train_batches=model_config['train_batch_per_epoch'], 

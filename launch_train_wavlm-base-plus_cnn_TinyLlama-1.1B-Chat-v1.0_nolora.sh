@@ -23,4 +23,4 @@ python3 train.py \
     --connector 'cnn' \
     --llm 'TinyLlama-1.1B-Chat-v1.0' \
     --no-lora \
-    --batch-size 32
+    --batch-size 256
