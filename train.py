@@ -106,18 +106,12 @@ if __name__ == "__main__":
     early_stop_callback = EarlyStopping(monitor="val/loss", min_delta=0.00, patience=10, verbose=False, mode="min")
 
     trainer = Trainer(
-<<<<<<< HEAD
-            max_epochs=500,
+            max_epochs=model_config['total_training_epoch'], 
             devices=1, accelerator="gpu", 
             strategy=DDPStrategy(find_unused_parameters=False),
             limit_train_batches=model_config['train_batch_per_epoch'], 
             limit_val_batches=model_config['val_batch_per_epoch'], 
-=======
-            max_epochs=model_config['total_training_epoch'], 
-            devices=1, accelerator="gpu", 
-            strategy=DDPStrategy(find_unused_parameters=False),
             # limit_train_batches=model_config['train_batch_per_epoch'], 
->>>>>>> upstream/main
             log_every_n_steps=100, 
             enable_checkpointing=True, 
             callbacks=[checkpoint_callback],
